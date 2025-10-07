@@ -914,7 +914,7 @@ GameObject:
   - component: {fileID: 1363713106}
   - component: {fileID: 1363713105}
   m_Layer: 5
-  m_Name: RawImage
+  m_Name: Cursor
   m_TagString: Untagged
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
@@ -1204,7 +1204,7 @@ Rigidbody:
   m_IsKinematic: 0
   m_Interpolate: 0
   m_Constraints: 0
-  m_CollisionDetection: 0
+  m_CollisionDetection: 2
 --- !u!135 &1607958242
 SphereCollider:
   m_ObjectHideFlags: 0
@@ -1251,7 +1251,7 @@ MeshRenderer:
   m_RenderingLayerMask: 1
   m_RendererPriority: 0
   m_Materials:
-  - {fileID: 2100000, guid: 31321ba15b8f8eb4c954353edc038b1d, type: 2}
+  - {fileID: 2100000, guid: 4930e1e9062730245b4b51282872737f, type: 2}
   m_StaticBatchInfo:
     firstSubMesh: 0
     subMeshCount: 0
@@ -1692,6 +1692,7 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::Superliminal
   target: {fileID: 1607958245}
+  targetRenderer: {fileID: 1607958243}
   targetMask:
     serializedVersion: 2
     m_Bits: 64
