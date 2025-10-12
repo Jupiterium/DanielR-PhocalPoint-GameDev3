@@ -1671,7 +1671,7 @@ PrefabInstance:
     m_AddedGameObjects: []
     m_AddedComponents:
     - targetCorrespondingSourceObject: {fileID: 9005220659476430823, guid: 2d3a85ecde41a8246a79669975912b74, type: 3}
-      insertIndex: -1
+      insertIndex: 2
       addedObject: {fileID: 60889539378096552}
   m_SourcePrefab: {fileID: 100100000, guid: 2d3a85ecde41a8246a79669975912b74, type: 3}
 --- !u!1 &60889539378096551 stripped
@@ -1691,12 +1691,17 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: f724c0cdddc3fbb4d81c2aad836cf4ec, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::Superliminal
+  minScaleLimit: 0.1
+  maxScaleLimit: 10
   targetMask:
     serializedVersion: 2
     m_Bits: 64
   ignoreTargetMask:
     serializedVersion: 2
     m_Bits: 31
+  ghostCaptureMask:
+    serializedVersion: 2
+    m_Bits: 128
   offsetFactor: 1
 --- !u!1 &2114283753834967212
 GameObject:
