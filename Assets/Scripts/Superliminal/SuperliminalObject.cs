@@ -15,9 +15,25 @@ public class SuperliminalObject : MonoBehaviour
     [Header("Ghost State")]
     public bool IsGhost = false; // Persistent flag to track the object's state
 
+    // Velocity State
+    [Header("Velocity State")]
+    public bool IsStatic = false;
+
     // Material Caching
     private Material originalMaterialInstance;
     private Color originalColor;
+
+    private void FixedUpdate()
+    {
+        // While the object is ghost, set its velocity to zero, continuously 
+        if (IsGhost)
+        {
+            // Enforce static velocity state
+            rb.linearVelocity = Vector3.zero;
+            rb.angularVelocity = Vector3.zero;
+            IsStatic = true;
+        }
+    }
 
     // Capture the original state before getting affected 
     private void Awake()
@@ -56,13 +72,13 @@ public class SuperliminalObject : MonoBehaviour
         if (IsGhost)
         {
             // Apply ghost state
-            ApplyMaterialState(true); // FIX: Calling the renamed method with only the boolean
+            ApplyMaterialState(true);
             rb.useGravity = false;
         }
         else
         {
             // Restore normal state
-            ApplyMaterialState(false); // FIX: Calling the renamed method with only the boolean
+            ApplyMaterialState(false); 
             rb.useGravity = true;
         }
     }

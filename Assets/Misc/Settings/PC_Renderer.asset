@@ -25,10 +25,10 @@ MonoBehaviour:
     BlitMaterial: {fileID: -876546973899608171, guid: 6c897a44b62e6d84e9b0f6d5238a158e, type: 3}
     ClearDepth: 0
   MaterialSettings:
-    OutlineScale: 1.38
+    OutlineScale: 0.8
     RobertsCrossMultiplier: 100
-    DepthThreshold: 19.6
-    NormalThreshold: 0.83
+    DepthThreshold: 0.5
+    NormalThreshold: 0.5
     SteepAngleThreshold: 3.39
     SteepAngleMultiplier: 25
     OutlineColor: {r: 0, g: 0, b: 0, a: 1}

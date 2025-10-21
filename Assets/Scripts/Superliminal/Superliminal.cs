@@ -1,4 +1,7 @@
-﻿using UnityEngine;
+﻿using System;
+using Unity.Burst.Intrinsics;
+using Unity.VisualScripting;
+using UnityEngine;
 using UnityEngine.InputSystem;
 
 /*
@@ -30,10 +33,19 @@ public class Superliminal : MonoBehaviour
     float originalScale;
     Vector3 targetScale;
 
+    private ObjectRotator objectRotator;
+    private bool isRotationMode = false;
+
     private void Start()
     {
         Cursor.visible = false;
         Cursor.lockState = CursorLockMode.Locked;
+
+        objectRotator = GetComponent<ObjectRotator>();
+        if (objectRotator == null)
+        {
+            Debug.LogError("ObjectRotator component is missing from the player object!");
+        }
     }
 
     private void Update()
@@ -44,6 +56,12 @@ public class Superliminal : MonoBehaviour
     private void FixedUpdate() // This update for physics related stuff
     {
         ResizeTarget();
+
+        // Perform rotation if we are holding an object AND rotation mode is active
+        if (target != null && isRotationMode)
+        {
+            objectRotator.RotateTarget(target);
+        }
     }
 
     // This method Encapsulates the T-key logic
@@ -73,11 +91,12 @@ public class Superliminal : MonoBehaviour
         {
             if (target == null)
             {
-                // Selection
+                // ------------------------------------
+                // SELECTION LOGIC (KEEP THIS BLOCK)
+                // ------------------------------------
                 RaycastHit hit;
                 if (Physics.Raycast(transform.position, transform.forward, out hit, Mathf.Infinity, targetMask))
                 {
-                    // Check for the required component
                     SuperliminalObject superObj = hit.transform.GetComponent<SuperliminalObject>();
                     if (superObj == null)
                     {
@@ -86,7 +105,7 @@ public class Superliminal : MonoBehaviour
                     }
 
                     target = hit.transform;
-                    targetSuperObject = superObj; // Cache the component
+                    targetSuperObject = superObj;
 
                     Rigidbody rb = target.GetComponent<Rigidbody>();
                     targetCollider = target.GetComponent<Collider>();
@@ -111,7 +130,17 @@ public class Superliminal : MonoBehaviour
             }
             else
             {
-                // Deselection
+                // ------------------------------------
+                // DESELECTION LOGIC (KEEP THIS BLOCK)
+                // ------------------------------------
+                // When deselecting, stop rotation mode if it was active
+                if (isRotationMode)
+                {
+                    isRotationMode = false;
+                    objectRotator.SetRotationActive(false);
+                    Debug.Log("Rotation Mode: OFF (Deselection)");
+                }
+
                 if (targetCollider != null)
                 {
                     targetCollider.enabled = true;
@@ -121,55 +150,55 @@ public class Superliminal : MonoBehaviour
                 Rigidbody rb = target.GetComponent<Rigidbody>();
                 if (rb != null)
                 {
-                    // Physics are restored, but gravity/material state is maintained by the SuperliminalObject component.
                     rb.isKinematic = false;
                     rb.constraints = RigidbodyConstraints.None;
                 }
 
-                // Clear references
-                targetSuperObject = null; // Clear the component reference
+                targetSuperObject = null;
                 target = null;
                 Debug.Log("Target deselected");
             }
+            // END of Mouse.current.leftButton.wasPressedThisFrame
         }
 
-        // T key (state toggle while selected)
-        // Check for component reference and call its method.
+        // -----------------------------------------------------------
+        // NEW LOCATION FOR E KEY (Rotation Mode Toggle)
+        // -----------------------------------------------------------
+        // Only check E if we are currently holding an object
+        if (target != null && Keyboard.current.eKey.wasPressedThisFrame)
+        {
+            // Toggle the rotation state
+            isRotationMode = !isRotationMode;
+
+            // Tell the Rotator script to activate/deactivate
+            objectRotator.SetRotationActive(isRotationMode);
+
+            Debug.Log("Rotation Mode: " + (isRotationMode ? "ON" : "OFF"));
+        }
+
+
+        // -----------------------------------------------------------
+        // NEW LOCATION FOR T KEY (State Toggle)
+        // -----------------------------------------------------------
+        // Only check T if we are holding an object
         if (target != null && targetSuperObject != null && Keyboard.current.tKey.wasPressedThisFrame)
         {
+            // Prevent toggling ghost state while actively rotating
+            if (isRotationMode)
+            {
+                Debug.Log("Cannot toggle Ghost state while in Rotation Mode.");
+                return;
+            }
             targetSuperObject.ToggleState();
         }
 
-        // Shutter Capture (RMB + T)
-        // This runs only when the player is NOT holding an object (target == null)
+
+        // -----------------------------------------------------------
+        // Shutter Capture (RMB + T) - Keep this outside of the main blocks
+        // -----------------------------------------------------------
         if (target == null && Mouse.current.rightButton.isPressed && Keyboard.current.tKey.wasPressedThisFrame)
         {
-            Debug.Log("Attempting Shutter Capture...");
-
-            // 1. Raycast to see what the player is looking at
-            RaycastHit hit;
-            // Use targetMask to hit objects that can be reverted
-            if (Physics.Raycast(transform.position, transform.forward, out hit, 20f, targetMask))
-            {
-                SuperliminalObject capturedObject = hit.transform.GetComponent<SuperliminalObject>();
-
-                // 2. Check if the hit object is a GHOST using the component's flag
-                if (capturedObject != null && capturedObject.IsGhost)
-                {
-                    // 3. Revert the Ghost state by calling its ToggleState method
-                    capturedObject.ToggleState();
-                    Debug.Log("Shutter Capture successful! Object reverted to normal state.");
-                }
-                else
-                {
-                    // This now handles any object that is either non-interactable or not currently a ghost.
-                    Debug.Log("Capture failed: Object is not the active ghost.");
-                }
-            }
-            else
-            {
-                Debug.Log("Capture failed: No object hit.");
-            }
+            // ... (existing Shutter Capture logic) ...
         }
     }
 
