@@ -1,5 +1,7 @@
 ﻿using System;
+using StarterAssets;
 using Unity.Burst.Intrinsics;
+using Unity.Cinemachine;
 using Unity.VisualScripting;
 using UnityEngine;
 using UnityEngine.InputSystem;
@@ -10,9 +12,16 @@ using UnityEngine.InputSystem;
  * - Toggle the object's zero-gravity/material state (opacity/color) using 'T'.
  * - Shutter capture an object while it's in the ghost (transparent) state.
 */
-
 public class Superliminal : MonoBehaviour
 {
+    // Reference to the Cinemachine Virtual Camera
+    [Header("Cinemachine Control")]
+    public CinemachineVirtualCamera playerVcam; 
+    private Transform originalLookAtTarget;
+
+    //[Header("Camera Control")]
+    //public MonoBehaviour playerCam;
+
     [Header("Resizing Limits")]
     public float minScaleLimit = 0.1f;
     public float maxScaleLimit = 10f;
@@ -20,7 +29,7 @@ public class Superliminal : MonoBehaviour
     private Transform target; // The object to be resized
     private Collider targetCollider; // We need target's collider to disable/enable it for the Resizing mechanic.
 
-    // NEW: Reference to the component on the currently held object
+    // Reference to the component on the currently held object
     private SuperliminalObject targetSuperObject;
 
     [Header("Parameters")]
@@ -38,8 +47,16 @@ public class Superliminal : MonoBehaviour
 
     private void Start()
     {
+
         Cursor.visible = false;
         Cursor.lockState = CursorLockMode.Locked;
+
+
+        // Cache the original target (PlayerCameraRoot)
+        if (playerVcam != null)
+        {
+            originalLookAtTarget = playerVcam.m_LookAt;
+        }
 
         objectRotator = GetComponent<ObjectRotator>();
         if (objectRotator == null)
@@ -86,14 +103,11 @@ public class Superliminal : MonoBehaviour
 
     void HandleInput()
     {
-        // Selection/Deselection of an object (Left Mouse Button)
+        //// Selection/Deselection of an object (Left Mouse Button)
         if (Mouse.current.leftButton.wasPressedThisFrame)
         {
             if (target == null)
             {
-                // ------------------------------------
-                // SELECTION LOGIC (KEEP THIS BLOCK)
-                // ------------------------------------
                 RaycastHit hit;
                 if (Physics.Raycast(transform.position, transform.forward, out hit, Mathf.Infinity, targetMask))
                 {
@@ -130,9 +144,6 @@ public class Superliminal : MonoBehaviour
             }
             else
             {
-                // ------------------------------------
-                // DESELECTION LOGIC (KEEP THIS BLOCK)
-                // ------------------------------------
                 // When deselecting, stop rotation mode if it was active
                 if (isRotationMode)
                 {
@@ -158,30 +169,69 @@ public class Superliminal : MonoBehaviour
                 target = null;
                 Debug.Log("Target deselected");
             }
-            // END of Mouse.current.leftButton.wasPressedThisFrame
         }
 
-        // -----------------------------------------------------------
-        // NEW LOCATION FOR E KEY (Rotation Mode Toggle)
-        // -----------------------------------------------------------
-        // Only check E if we are currently holding an object
-        if (target != null && Keyboard.current.eKey.wasPressedThisFrame)
+        //// Shutter Capture (Right Mouse Button + T)
+        // This runs only when the player is NOT holding an object (target == null)
+        if (target == null && Mouse.current.rightButton.isPressed && Keyboard.current.tKey.wasPressedThisFrame)
         {
-            // Toggle the rotation state
-            isRotationMode = !isRotationMode;
+            Debug.Log("Attempting Shutter Capture...");
 
-            // Tell the Rotator script to activate/deactivate
-            objectRotator.SetRotationActive(isRotationMode);
+            // 1. Raycast to see what the player is looking at
+            RaycastHit hit;
 
-            Debug.Log("Rotation Mode: " + (isRotationMode ? "ON" : "OFF"));
+            // Use targetMask to hit objects that can be reverted
+            if (Physics.Raycast(transform.position, transform.forward, out hit, 20f, targetMask))
+            {
+                SuperliminalObject capturedObject = hit.transform.GetComponent<SuperliminalObject>();
+
+                // 2. Check if the hit object is a GHOST using the component's flag
+                if (capturedObject != null && capturedObject.IsGhost)
+                {
+                    // 3. Revert the Ghost state by calling its ToggleState method
+                    capturedObject.ToggleState();
+                    Debug.Log("Shutter Capture successful! Object reverted to normal state.");
+                }
+                else
+                {
+                    // This now handles any object that is either non-interactable or not currently a ghost.
+                    Debug.Log("Capture failed: Object is not the active ghost.");
+                }
+            }
+            else { Debug.Log("Capture failed: No object hit."); }
         }
 
+        //// E key (Rotation Mode Toggle)
+        if (target != null)
+        {
+            bool rKeyPressed = Keyboard.current.rKey.isPressed;
 
-        // -----------------------------------------------------------
-        // NEW LOCATION FOR T KEY (State Toggle)
-        // -----------------------------------------------------------
-        // Only check T if we are holding an object
-        if (target != null && targetSuperObject != null && Keyboard.current.tKey.wasPressedThisFrame)
+            // Check if we need to START rotation mode
+            if (rKeyPressed && !isRotationMode)
+            {
+                isRotationMode = true;
+                FirstPersonController.RotationOverridden = true;
+                objectRotator.SetRotationActive(true);
+
+                if (playerVcam != null) playerVcam.m_LookAt = null;
+
+                Debug.Log("Rotation Mode: ON (E Held)");
+            }
+            // Check if we need to STOP rotation mode
+            else if (!rKeyPressed && isRotationMode)
+            {
+                isRotationMode = false;
+                FirstPersonController.RotationOverridden = false;
+                objectRotator.SetRotationActive(false);
+
+                if (playerVcam != null) playerVcam.m_LookAt = originalLookAtTarget;
+
+                Debug.Log("Rotation Mode: OFF (E Released)");
+            }
+        }
+
+        // T key (state toggle while selected) - Existing
+        if (target != null && Keyboard.current.tKey.wasPressedThisFrame)
         {
             // Prevent toggling ghost state while actively rotating
             if (isRotationMode)
@@ -189,16 +239,7 @@ public class Superliminal : MonoBehaviour
                 Debug.Log("Cannot toggle Ghost state while in Rotation Mode.");
                 return;
             }
-            targetSuperObject.ToggleState();
-        }
-
-
-        // -----------------------------------------------------------
-        // Shutter Capture (RMB + T) - Keep this outside of the main blocks
-        // -----------------------------------------------------------
-        if (target == null && Mouse.current.rightButton.isPressed && Keyboard.current.tKey.wasPressedThisFrame)
-        {
-            // ... (existing Shutter Capture logic) ...
+            ToggleTargetState(target);
         }
     }
 
