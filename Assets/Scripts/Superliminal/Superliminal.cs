@@ -14,9 +14,19 @@ using UnityEngine.InputSystem;
 */
 public class Superliminal : MonoBehaviour
 {
+    [Header("Audio Sources")]
+    public AudioSource sfxSource;
+    public AudioSource loopSource;
+
+    [Header("Audio Clips")]
+    public AudioClip grabSound;
+    public AudioClip releaseSound;
+    public AudioClip ghostOnSound;
+    public AudioClip ghostOffSound;
+
     // Reference to the Cinemachine Virtual Camera
     [Header("Cinemachine Control")]
-    public CinemachineVirtualCamera playerVcam; 
+    public CinemachineVirtualCamera playerVcam;
     private Transform originalLookAtTarget;
 
     //[Header("Camera Control")]
@@ -39,8 +49,11 @@ public class Superliminal : MonoBehaviour
     public float offsetFactor;
 
     float originialDistance;
-    float originalScale;
-    Vector3 targetScale;
+    //float originalScale; /* Deprecated: Replaced by initialObjectScale */
+    //Vector3 targetScale; /* Deprecated: Replaced by initialObjectScale */
+
+    // Vector3 to store the initial scale of the object
+    Vector3 initialObjectScale;
 
     private ObjectRotator objectRotator;
     private bool isRotationMode = false;
@@ -103,7 +116,7 @@ public class Superliminal : MonoBehaviour
 
     void HandleInput()
     {
-        //// Selection/Deselection of an object (Left Mouse Button)
+        // Selection/Deselection of an object (Left Mouse Button)
         if (Mouse.current.leftButton.wasPressedThisFrame)
         {
             if (target == null)
@@ -136,9 +149,12 @@ public class Superliminal : MonoBehaviour
                     }
 
                     originialDistance = Vector3.Distance(transform.position, target.position);
-                    originalScale = target.localScale.x;
-                    targetScale = target.localScale;
+                    //originalScale = target.localScale.x;
+                    //targetScale = target.localScale;
 
+                    initialObjectScale = target.localScale;
+
+                    sfxSource.PlayOneShot(grabSound);
                     Debug.Log("Target selected");
                 }
             }
@@ -149,7 +165,7 @@ public class Superliminal : MonoBehaviour
                 {
                     isRotationMode = false;
                     objectRotator.SetRotationActive(false);
-                    Debug.Log("Rotation Mode: OFF (Deselection)");
+                    Debug.Log("Rotation Mode is OFF (Deselection)");
                 }
 
                 if (targetCollider != null)
@@ -167,17 +183,19 @@ public class Superliminal : MonoBehaviour
 
                 targetSuperObject = null;
                 target = null;
+
+                sfxSource.PlayOneShot(releaseSound);
                 Debug.Log("Target deselected");
             }
         }
 
-        //// Shutter Capture (Right Mouse Button + T)
+        // Shutter Capture (Right Mouse Button + T)
         // This runs only when the player is NOT holding an object (target == null)
         if (target == null && Mouse.current.rightButton.isPressed && Keyboard.current.tKey.wasPressedThisFrame)
         {
             Debug.Log("Attempting Shutter Capture...");
 
-            // 1. Raycast to see what the player is looking at
+            // Raycast to see what the player is looking at
             RaycastHit hit;
 
             // Use targetMask to hit objects that can be reverted
@@ -185,10 +203,10 @@ public class Superliminal : MonoBehaviour
             {
                 SuperliminalObject capturedObject = hit.transform.GetComponent<SuperliminalObject>();
 
-                // 2. Check if the hit object is a GHOST using the component's flag
+                // Check if the hit object is a GHOST using the component's flag
                 if (capturedObject != null && capturedObject.IsGhost)
                 {
-                    // 3. Revert the Ghost state by calling its ToggleState method
+                    // Revert the Ghost state by calling its ToggleState method
                     capturedObject.ToggleState();
                     Debug.Log("Shutter Capture successful! Object reverted to normal state.");
                 }
@@ -201,7 +219,7 @@ public class Superliminal : MonoBehaviour
             else { Debug.Log("Capture failed: No object hit."); }
         }
 
-        //// E key (Rotation Mode Toggle)
+        // R key (Rotation Mode Toggle)
         if (target != null)
         {
             bool rKeyPressed = Keyboard.current.rKey.isPressed;
@@ -243,7 +261,7 @@ public class Superliminal : MonoBehaviour
         }
     }
 
-    // Method which resizes the selected object (Superliminal mechanic basically)
+    // This method handles resizing the target object based on distance to surfaces
     void ResizeTarget()
     {
         if (target == null) return;
@@ -251,22 +269,26 @@ public class Superliminal : MonoBehaviour
         RaycastHit hit;
         if (Physics.Raycast(transform.position, transform.forward, out hit, Mathf.Infinity, ignoreTargetMask))
         {
+            // Calculate scale factor based on distance
             float hitDistance = hit.distance;
             float s = hitDistance / originialDistance;
 
-            // Clamp the scale ratio
-            s = Mathf.Clamp(s, minScaleLimit / originalScale, maxScaleLimit / originalScale);
+            // Clamp scale factor to prevent extreme resizing
+            s = Mathf.Clamp(s, minScaleLimit / initialObjectScale.x, maxScaleLimit / initialObjectScale.x);
 
-            // Lerp for smoother scale transitions
-            float targetS = Mathf.Lerp(targetScale.x, s, 0.5f);
-            targetScale.x = targetScale.y = targetScale.z = targetS;
+            // Calculate new scale
+            Vector3 targetNewScale = initialObjectScale * s;
 
-            target.transform.localScale = targetScale * originalScale;
+            // Lerping for smooth scaling
+            target.localScale = Vector3.Lerp(target.localScale, targetNewScale, 10f * Time.deltaTime);
 
-            // Position the target slightly in front of the hit point
-            float halfObjectSize = target.transform.localScale.x * 0.5f;
+            // Position target
+            // Use the largest dimension for offset to prevent clipping
+            float largestDimension = Mathf.Max(target.localScale.x, target.localScale.y, target.localScale.z);
+            float halfObjectSize = largestDimension * 0.5f;
             float visualClearance = 0.05f;
 
+            // Adjust position to account for new size
             target.position = hit.point - transform.forward * (halfObjectSize + visualClearance);
         }
     }
