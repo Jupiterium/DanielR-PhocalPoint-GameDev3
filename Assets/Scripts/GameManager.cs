@@ -1,30 +1,36 @@
 using UnityEngine;
-using UnityEngine.SceneManagement;
 
 public class GameManager : MonoBehaviour
 {
-    public Transform player;
-    public Transform spawnPoint;
+    public static GameManager Instance;
+
+    [Header("Game State")]
+    public int currentScore = 0;
+    public int itemsRequired = 3; // Kept for the Door logic, but hidden from UI
+
+    [Header("References")]
+    public UIManager uiManager;
+
+    private void Awake()
+    {
+        if (Instance == null) Instance = this;
+        else Destroy(gameObject);
+    }
 
     private void Start()
     {
-        // Move player to spawn point instantly on start
-        if (player != null && spawnPoint != null)
-        {
-            // Disable CharacterController briefly to prevent physics glitches during teleport
-            CharacterController cc = player.GetComponent<CharacterController>();
-            if (cc != null) cc.enabled = false;
-
-            player.position = spawnPoint.position;
-            player.rotation = spawnPoint.rotation;
-
-            if (cc != null) cc.enabled = true;
-        }
+        // Initialize UI at start (x0)
+        if (uiManager != null) uiManager.UpdateScoreText(currentScore);
     }
 
-    // Call where needed to restart the level
-    public void RestartLevel()
+    public void AddScore(int amount)
     {
-        SceneManager.LoadScene(SceneManager.GetActiveScene().buildIndex);
+        currentScore += amount;
+
+        // Update the UI with just the count
+        if (uiManager != null)
+        {
+            uiManager.UpdateScoreText(currentScore);
+        }
     }
 }
