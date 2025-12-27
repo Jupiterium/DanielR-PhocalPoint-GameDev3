@@ -19,8 +19,6 @@ public class AudioTrigger : MonoBehaviour
             audioSource.Play();
 
             Debug.Log("Audio triggered on player entry.");
-
-            // Optional: Fade in logic could go here, but Play() is fine for now.
         }
     }
 }
