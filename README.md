@@ -20,3 +20,6 @@ You can also aim at an object and **hold Right Mouse Button + press T** to quick
 ## Important
 PS: There seems to be an issue with level transitioning, so just load each level from Unity idividually afterwards and play/test them again.
 -> Assets/Scenes/...levels...
+
+### Notes
+The game is optimized with reusable/modular scripts & prefabs, as well as instantiation and deletion of unused objects in the scene to unload the gpu and memory. Also used baked lighting, coroutines, procedural animation for ui elements, layering, and more.
