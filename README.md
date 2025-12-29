@@ -18,5 +18,5 @@ While grabbed, you can:
 You can also aim at an object and **hold Right Mouse Button + press T** to quickly transform the object state.
 
 ## Important
-PS: There seems to be an issue with level transitioning, so just load each level from Unity idividually afterwards.
-Assets/Scenes/...levels...
+PS: There seems to be an issue with level transitioning, so just load each level from Unity idividually afterwards and play/test them again.
+-> Assets/Scenes/...levels...
