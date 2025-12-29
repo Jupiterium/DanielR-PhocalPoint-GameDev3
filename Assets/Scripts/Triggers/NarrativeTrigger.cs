@@ -27,7 +27,7 @@ public class NarrativeTrigger : MonoBehaviour
 
         // Ensure settings are optimal for 2D UI sounds
         audioSource.playOnAwake = false;
-        audioSource.spatialBlend = 1f; // 0 = 2D (Headphones), 1 = 3D (Wall)
+        audioSource.spatialBlend = 1f;
     }
 
     private void Start()
@@ -39,6 +39,7 @@ public class NarrativeTrigger : MonoBehaviour
         }
     }
 
+    // Trigger when player enters the collider
     private void OnTriggerEnter(Collider other)
     {
         if (other.CompareTag("Player") && !hasTriggered)
@@ -51,13 +52,13 @@ public class NarrativeTrigger : MonoBehaviour
 
     private IEnumerator PlayTextSequence()
     {
-        // 1. PLAY SOUND
+        // Play Sound
         if (textAppearSound != null)
         {
             audioSource.PlayOneShot(textAppearSound, soundVolume);
         }
 
-        // 2. FADE IN
+        // Fade In
         float timer = 0f;
         while (timer < fadeInDuration)
         {
@@ -67,10 +68,10 @@ public class NarrativeTrigger : MonoBehaviour
         }
         textComponent.alpha = 1f;
 
-        // 3. WAIT
+        // Wait for display duration
         yield return new WaitForSeconds(displayDuration);
 
-        // 4. FADE OUT
+        // Fade Out
         timer = 0f;
         while (timer < fadeOutDuration)
         {

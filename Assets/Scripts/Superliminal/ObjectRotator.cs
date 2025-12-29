@@ -3,7 +3,7 @@ using UnityEngine.InputSystem;
 
 /*
  * This script is used for rotating a target object in world space 
- * when the 'E' key is held down and the mouse is moved.
+ * when the 'R' key is held down and the mouse is moved.
  * Script relies on standard Unity Input System checks.
  */
 public class ObjectRotator : MonoBehaviour
