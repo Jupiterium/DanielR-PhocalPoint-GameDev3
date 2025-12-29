@@ -1,0 +1,84 @@
+using UnityEngine;
+using TMPro;
+using System.Collections;
+
+[RequireComponent(typeof(AudioSource))] // Automatically adds an AudioSource
+public class NarrativeTrigger : MonoBehaviour
+{
+    [Header("References")]
+    public TMP_Text textComponent;
+
+    [Header("Audio Settings")]
+    public AudioClip textAppearSound;
+    [Range(0f, 1f)] public float soundVolume = 0.5f;
+
+    [Header("Timing Settings")]
+    public float fadeInDuration = 1.5f;
+    public float displayDuration = 2.0f;
+    public float fadeOutDuration = 1.5f;
+
+    private AudioSource audioSource;
+    private bool hasTriggered = false;
+
+    private void Awake()
+    {
+        // Get the AudioSource attached to this same object
+        audioSource = GetComponent<AudioSource>();
+
+        // Ensure settings are optimal for 2D UI sounds
+        audioSource.playOnAwake = false;
+        audioSource.spatialBlend = 1f; // 0 = 2D (Headphones), 1 = 3D (Wall)
+    }
+
+    private void Start()
+    {
+        if (textComponent != null)
+        {
+            textComponent.gameObject.SetActive(true);
+            textComponent.alpha = 0f;
+        }
+    }
+
+    private void OnTriggerEnter(Collider other)
+    {
+        if (other.CompareTag("Player") && !hasTriggered)
+        {
+            hasTriggered = true;
+            StartCoroutine(PlayTextSequence());
+            GetComponent<Collider>().enabled = false;
+        }
+    }
+
+    private IEnumerator PlayTextSequence()
+    {
+        // 1. PLAY SOUND
+        if (textAppearSound != null)
+        {
+            audioSource.PlayOneShot(textAppearSound, soundVolume);
+        }
+
+        // 2. FADE IN
+        float timer = 0f;
+        while (timer < fadeInDuration)
+        {
+            timer += Time.deltaTime;
+            textComponent.alpha = Mathf.Lerp(0f, 1f, timer / fadeInDuration);
+            yield return null;
+        }
+        textComponent.alpha = 1f;
+
+        // 3. WAIT
+        yield return new WaitForSeconds(displayDuration);
+
+        // 4. FADE OUT
+        timer = 0f;
+        while (timer < fadeOutDuration)
+        {
+            timer += Time.deltaTime;
+            textComponent.alpha = Mathf.Lerp(1f, 0f, timer / fadeOutDuration);
+            yield return null;
+        }
+        textComponent.alpha = 0f;
+        textComponent.gameObject.SetActive(false);
+    }
+}
