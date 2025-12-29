@@ -6,28 +6,37 @@ public class GameManager : MonoBehaviour
 
     [Header("Game State")]
     public int currentScore = 0;
-    public int itemsRequired = 3; // Kept for the Door logic, but hidden from UI
+    public int collectablesRequired = 4; // For hidden level
 
     [Header("References")]
     public UIManager uiManager;
 
     private void Awake()
     {
-        if (Instance == null) Instance = this;
-        else Destroy(gameObject);
+        // Singleton Pattern: There can be only one
+        if (Instance == null)
+        {
+            Instance = this;
+            DontDestroyOnLoad(gameObject);
+        }
+        else
+        {
+            Destroy(gameObject);
+        }
     }
 
     private void Start()
     {
-        // Initialize UI at start (x0)
+        // Initialize UI at start
         if (uiManager != null) uiManager.UpdateScoreText(currentScore);
     }
 
     public void AddScore(int amount)
     {
+        // Update score
         currentScore += amount;
 
-        // Update the UI with just the count
+        // Update the UI
         if (uiManager != null)
         {
             uiManager.UpdateScoreText(currentScore);
