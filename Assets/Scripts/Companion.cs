@@ -3,6 +3,7 @@ using System.Collections;
 
 public class Companion : MonoBehaviour
 {
+    // Dialogue entry structure
     [System.Serializable]
     public class DialogueEntry
     {
@@ -12,6 +13,7 @@ public class Companion : MonoBehaviour
         public AudioClip audioClip;
     }
 
+    // Interaction settings
     [Header("Interaction")]
     [Tooltip("Add or remove dialogue entries here")]
     public DialogueEntry[] dialogueSequence = new DialogueEntry[]
@@ -19,19 +21,22 @@ public class Companion : MonoBehaviour
         new DialogueEntry()
     };
 
+    // Sequence after interaction
     [Header("Aftermath")]
     [Tooltip("Which drone appears after this one leaves?")]
     public GameObject nextDroneToActivate;
 
+    // Exit behavior settings
     [Header("Exit Logic")]
     [Tooltip("If true, it shrinks and vanishes. If false, it flies to the Exit Location.")]
     public bool justDisintegrate = true;
-    public Transform specificExitLocation; // Optional: Drag an empty GameObject here
+    public Transform specificExitLocation; 
     [Tooltip("Duration (in seconds) for the disintegrate effect")]
     public float disintegrateDuration = 1.0f;
     [Tooltip("Duration (in seconds) for the fly-away effect")]
     public float flyAwayDuration = 1.5f;
 
+    // Visual and behavior settings
     [Header("Visuals")]
     public Renderer meshRenderer;
     public int eyeMaterialIndex = 1;
@@ -39,7 +44,7 @@ public class Companion : MonoBehaviour
     public Material eyeHappy;
     public Material eyeDead;
 
-    [Header("Behaviour Tuning")]
+    [Header("Behaviour")]
     [Tooltip("How quickly the drone rotates to face the player (higher = faster)")]
     [Range(1f, 10f)]
     public float playerLookSpeed = 5f;
@@ -68,7 +73,7 @@ public class Companion : MonoBehaviour
         initialScale = transform.localScale;
 
         // Start Idle
-        SetEye(eyeNormal);
+        //SetEye(eyeNormal);
 
         // Ensure the NEXT drone is hidden at the start (Safety check)
         if (nextDroneToActivate != null)
@@ -103,26 +108,29 @@ public class Companion : MonoBehaviour
     {
         isInteracting = true;
 
-        // --- PHASE 1: DIALOGUE SEQUENCE ---
+        // Dialogue Sequence
         if (dialogueSequence != null && dialogueSequence.Length > 0)
         {
             foreach (DialogueEntry dialogue in dialogueSequence)
             {
-                SetEye(eyeHappy);
+                //SetEye(eyeHappy);
 
                 // Play audio if assigned
                 if (dialogue.audioClip != null && audioSource != null)
                     audioSource.PlayOneShot(dialogue.audioClip);
 
-                // Send Text to Manager (with safety checks)
-                if (GameManager.Instance != null && GameManager.Instance.uiManager != null)
+                // Find UIManager in the scene
+                UIManager localUI = FindObjectOfType<UIManager>();
+
+                if (localUI != null)
                 {
-                    GameManager.Instance.uiManager.ShowSubtitle(dialogue.message, dialogue.duration);
+                    localUI.ShowSubtitle(dialogue.message, dialogue.duration);
                 }
                 else
                 {
-                    Debug.LogWarning("[DRONE] GameManager or UIManager not found. Message will only appear in console.");
+                    Debug.LogWarning("[DRONE] UIManager not found in this scene! Text will not appear.");
                 }
+
                 Debug.Log($"[DRONE]: {dialogue.message}");
 
                 yield return new WaitForSeconds(dialogue.duration);
@@ -133,8 +141,8 @@ public class Companion : MonoBehaviour
             Debug.LogWarning("[DRONE] No dialogue entries configured!");
         }
 
-        // --- PHASE 2: EXIT ---
-        SetEye(eyeDead);
+        // Exit
+        //SetEye(eyeDead);
 
         if (justDisintegrate)
         {
@@ -167,32 +175,34 @@ public class Companion : MonoBehaviour
             Debug.LogWarning("[DRONE] Exit type is 'Fly Away' but no Exit Location specified. Drone will just disappear.");
         }
 
-        // --- PHASE 3: CHAIN REACTION ---
+        // Aftermath: Activate next drone if assigned
         if (nextDroneToActivate != null)
         {
             nextDroneToActivate.SetActive(true);
         }
 
-        Destroy(gameObject); // Bye bye
+        Destroy(gameObject); 
     }
 
-    void SetEye(Material mat)
-    {
-        if (meshRenderer == null || mat == null)
-            return;
+    // Didn't work, so commenting out for now
+    //void SetEye(Material mat)
+    //{
+    //    if (meshRenderer == null || mat == null)
+    //        return;
 
-        Material[] mats = meshRenderer.materials;
-        if (eyeMaterialIndex >= 0 && eyeMaterialIndex < mats.Length) 
-        {
-            mats[eyeMaterialIndex] = mat;
-            meshRenderer.materials = mats;
-        }
-        else
-        {
-            Debug.LogError($"[DRONE] Eye Material Index {eyeMaterialIndex} is out of bounds! Renderer has {mats.Length} materials.");
-        }
-    }
+    //    Material[] mats = meshRenderer.materials;
+    //    if (eyeMaterialIndex >= 0 && eyeMaterialIndex < mats.Length) 
+    //    {
+    //        mats[eyeMaterialIndex] = mat;
+    //        meshRenderer.materials = mats;
+    //    }
+    //    else
+    //    {
+    //        Debug.LogError($"[DRONE] Eye Material Index {eyeMaterialIndex} is out of bounds! Renderer has {mats.Length} materials.");
+    //    }
+    //}
 
+    // Validation checks to warn about missing references
     private void ValidateSetup()
     {
         if (meshRenderer == null)
